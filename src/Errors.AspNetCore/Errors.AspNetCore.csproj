@@ -20,7 +20,12 @@
 	<ItemGroup>
 		<PackageReference Include="CleanErrorWorks.Errors.Abstractions" />
 		<PackageReference Include="Microsoft.Data.SqlClient" />
+		<PackageReference Include="Microsoft.Extensions.Options" />
 		<PackageReference Include="Polly" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="../Observability.OpenTelemetry/Observability.OpenTelemetry.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -1,7 +1,7 @@
 ﻿using Errors.Abstractions;
 using System.Net;
 
-namespace Errors.AspNetCore;
+namespace Errors.AspNetCore.Classifiers;
 
 public sealed class SqlServerErrorClassifier
 {

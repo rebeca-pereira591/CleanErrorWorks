@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.Collections.Generic;
 
-namespace Errors.AspNetCore;
+namespace Errors.AspNetCore.Mappers;
 
 internal static class ValidationMappingExtensions
 {

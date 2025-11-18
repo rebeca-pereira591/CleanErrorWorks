@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Net;
 
-namespace Errors.AspNetCore;
+namespace Errors.AspNetCore.Mappers;
 
 public interface IExceptionProblemDetailsMapper
 {
