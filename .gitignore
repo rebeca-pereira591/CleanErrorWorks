@@ -1,0 +1,85 @@
+# Archivos de usuario y configuración local
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build y binarios
+bin/
+obj/
+[Bb]uild/
+[Ll]og/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+# Archivos generados por diseño
+*.designer.cs
+*.generated.cs
+
+# Archivos de configuración de Copilot/AI
+copilot/
+*.indices
+*.cache
+
+# Archivos de paquetes NuGet
+*.nupkg
+*.snupkg
+packages/
+*.nuget.props
+*.nuget.targets
+
+# Archivos de configuración de MSBuild
+*.dbmdl
+*.bak
+*.log
+*.tlog
+
+# Archivos de publicación
+publish/
+*.pubxml
+*.publishproj
+
+# Archivos de test y cobertura
+TestResults/
+*.coverage
+*.coveragexml
+*.testsettings
+*.vsmdi
+
+# Archivos de configuración de IDE
+.idea/
+*.iml
+
+# Archivos de configuración de diseño
+DesignTimeBuild/
+*.tmp
+*.temp
+
+# Archivos de configuración de usuario
+*.config
+appsettings.Development.json
+
+# NuGet packages
+*.nupkg
+*.snupkg
+packages/
+
+# Compiled binaries
+*.dll
+*.exe
+bin/
+obj/
+
+# NuGet artifacts
+*.nuspec
+*.psmdcp
+[Cc]ontent_Types].xml
+_nupkg_*/
+package/
+_rels/
+
