@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageId>CleanErrorWorks.Errors.AspNetCore</PackageId>
+		<Version>0.1.0</Version>
+		<Authors>CleanErrorWorks</Authors>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<Description>Integración de errores con ASP.NET Core y ProblemDetails.</Description>
+		<PackageTags>errors;aspnetcore;problem-details;dotnet</PackageTags>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="CleanErrorWorks.Errors.Abstractions" />
+		<PackageReference Include="Microsoft.Data.SqlClient" />
+		<PackageReference Include="Polly" />
+	</ItemGroup>
+
+</Project>
