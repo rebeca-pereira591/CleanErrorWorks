@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace Logging.Core;
+namespace Errors.Logging;
 
 public static partial class ApiLog
 {

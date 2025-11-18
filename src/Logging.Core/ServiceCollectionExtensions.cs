@@ -1,23 +1,17 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Logging.Core;
+namespace Errors.Logging;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddLoggingConventions(this IServiceCollection services)
+    public static IServiceCollection AddDefaultLogging(
+        this IServiceCollection services,
+        IConfiguration? configuration = null,
+        Action<LoggingConventionOptions>? configure = null)
     {
-        services.AddLogging(builder =>
-        {
-            builder.ClearProviders();
-            builder.AddJsonConsole(o =>
-            {
-                o.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fff ";
-                o.IncludeScopes = true;
-                o.JsonWriterOptions = new() { Indented = false };
-            });
-            builder.SetMinimumLevel(LogLevel.Information);
-        });
+        services.AddLogging(builder => builder.AddDefaultLogging(configuration, configure));
         return services;
     }
 }
