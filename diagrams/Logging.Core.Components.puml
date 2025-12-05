@@ -1,0 +1,30 @@
+@startuml
+' Component diagram for Logging.Core building blocks.
+'title Logging.Core – Component Diagram
+skinparam componentStyle rectangle
+skinparam dpi 120
+
+component "ServiceCollectionExtensions\n(AddDefaultLogging)" <<component>> as ServiceExt
+component "LoggingBuilderExtensions\n(AddDefaultLogging)" <<component>> as BuilderExt
+component "LoggingBuilderConfigurator" <<component>> as Configurator
+component "LoggingConventionOptions" <<configuration>> as Options
+component "ConsoleLoggerProvider" <<external>> as Console
+component "DebugLoggerProvider" <<external>> as Debug
+component "Custom Providers" <<external>> as Custom
+component "Demo.Api" <<external>> as Demo
+
+Demo --> ServiceExt : IServiceCollection
+ServiceExt --> BuilderExt : ILoggingBuilder pipeline
+BuilderExt --> Options : configure defaults
+BuilderExt --> Configurator : Apply(builder, configuration, options)
+Configurator --> Console
+Configurator --> Debug
+Configurator --> Custom : executes delegates
+
+note bottom
+  ServiceCollectionExtensions registers the builder extension so consumers only call
+  services.AddDefaultLogging(). Configurator applies provider clearing, configuration binding,
+  and minimum-level rules captured in LoggingConventionOptions.
+end note
+
+@enduml

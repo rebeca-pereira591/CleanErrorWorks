@@ -1,0 +1,58 @@
+@startuml
+' Global interaction diagram showing how all 5 projects collaborate.
+'title CleanErrorWorks – Global Interaction
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam dpi 120
+
+rectangle "Demo.Api\n• Hosts minimal APIs\n• Registers infra via DI" as Demo {
+  component "HTTP Endpoints" as Endpoints
+}
+
+component "Errors.AspNetCore\n• GlobalExceptionHandler\n• Mapper registry + sanitizers" as ErrorsAsp
+component "Errors.Abstractions\n• ErrorCode & Result<T>\n• Domain-specific exceptions" as ErrorsAbs
+component "Logging.Core\n• LoggingBuilder conventions\n• Structured log events" as LoggingCore
+component "Observability.OpenTelemetry\n• ActivityTagger & events\n• OTLP/exporter wiring" as OTel
+cloud "Telemetry Backends\n(Zipkin / Jaeger / Tempo / App Insights)" as Backends
+
+Demo --> ErrorsAsp : "AddErrorHandling()\nException pipeline"
+Demo --> LoggingCore : "AddDefaultLogging()\nconfigure providers"
+Demo --> OTel : "AddDefaultOpenTelemetry()\nbuild ActivitySource"
+Demo --> ErrorsAbs : "Throws IAppError\nreturns Result<T>"
+ErrorsAsp ..> ErrorsAbs : "Maps ErrorCode/IAppError"
+ErrorsAsp --> LoggingCore : "ILogger<> scope\nApiLog events"
+ErrorsAsp --> OTel : "ISpanEnricher uses\nIActivityTagger + events"
+OTel --> Backends : "OTLP/AI exporters"
+
+note bottom of Demo
+  Demo.Api orchestrates the stack: it exposes endpoints,
+  emits domain errors (Errors.Abstractions), delegates exception handling
+  to Errors.AspNetCore, and wires shared logging + telemetry defaults.
+end note
+
+note right of ErrorsAsp
+  Responsibilities:
+  • Resolve exceptions via Strategy mappers
+  • Sanitize & format ProblemDetails
+  • Enrich spans/logs before response
+end note
+
+note right of LoggingCore
+  Responsibilities:
+  • Apply logging conventions (providers, levels)
+  • Supply ILogger used inside GlobalExceptionHandler and controllers
+end note
+
+note right of OTel
+  Responsibilities:
+  • Configure ActivitySource, samplers, exporters
+  • Supply ActivityTagger/EventFactory used by Errors.AspNetCore
+end note
+
+note left of ErrorsAbs
+  Responsibilities:
+  • Define shared error contracts for the entire solution
+  • Allow Demo.Api + mappers to share ErrorCode metadata
+end note
+
+@enduml

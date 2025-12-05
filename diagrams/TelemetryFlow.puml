@@ -1,0 +1,34 @@
+@startuml
+' Sequence diagram describing telemetry pipeline for errors.
+'title Telemetry Flow – From Errors to Observability Backends
+skinparam dpi 120
+
+participant "ActivitySpanEnricher\n(Errors.AspNetCore)" as Enricher
+participant "ExceptionSanitizer" as Sanitizer
+participant "ActivityTagger\n(Observability)" as Tagger
+participant "ActivityEventFactory\n(Observability)" as EventFactory
+participant "OpenTelemetry SDK\n(Tracer/Meter providers)" as OTelSdk
+participant "Exporters" as Exporters
+participant "Backends\n(Zipkin/Jaeger/Tempo/AppInsights)" as Backends
+
+Enricher -> Sanitizer : Sanitize(detail, includeStack?)
+Sanitizer --> Enricher : Redacted detail + includeStack
+Enricher -> Tagger : Apply(Activity, tagContext)
+Tagger --> Enricher : Activity enriched
+Enricher -> EventFactory : CreateExceptionEvent(exceptionContext)
+EventFactory --> Enricher : ActivityEvent(exception)
+Enricher -> EventFactory : CreateProblemDetailsEvent(problemContext)
+EventFactory --> Enricher : ActivityEvent(problem)
+Enricher -> OTelSdk : Add events + SetStatus(Error)
+OTelSdk -> Exporters : Batch processed spans/metrics
+activate Exporters
+Exporters -> Backends : Send OTLP/AI payloads
+Backends --> Exporters : ACK / response
+deactivate Exporters
+
+note over Exporters, Backends
+  Exporters configured via OpenTelemetryOptions (OTLP, Tempo, console, Application Insights).
+  Additional targets (Zipkin, Jaeger) can consume OTLP-compatible payloads.
+end note
+
+@enduml

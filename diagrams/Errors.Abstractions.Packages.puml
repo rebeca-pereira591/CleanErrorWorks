@@ -1,0 +1,29 @@
+@startuml
+' Package diagram grouping contracts vs exception types.
+'title Errors.Abstractions – Package Diagram
+skinparam dpi 120
+
+package "Errors.Abstractions.Contracts" {
+  class ErrorCode
+  interface IAppError
+  class "Result<T>"
+}
+
+package "Errors.Abstractions.Exceptions" {
+  class DomainException
+  class ValidationException
+  class AuthorizationException
+  class NotFoundException
+  class RateLimitException
+}
+
+"Errors.Abstractions.Exceptions" ..> IAppError : implements
+"Errors.Abstractions.Exceptions" ..> ErrorCode : uses metadata
+"Result<T>" ..> IAppError : failure branch
+
+note bottom
+  Contracts package is referenced by every other project (API, middleware, logging).
+  Exception types stay isolated so new packages can add additional mappers without coupling.
+end note
+
+@enduml

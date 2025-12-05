@@ -1,0 +1,100 @@
+@startuml
+' Class diagram for OpenTelemetry configuration + helpers.
+'title Observability.OpenTelemetry – Class Diagram
+skinparam classAttributeIconSize 0
+skinparam dpi 120
+
+class ServiceCollectionExtensions {
+  +AddDefaultOpenTelemetry(IServiceCollection, IConfiguration?, Action<OpenTelemetryOptions>?)
+}
+
+class OpenTelemetryOptions {
+  +string? ServiceName
+  +string Environment
+  +bool EnableTracing
+  +bool EnableMetrics
+  +SamplingOptions Sampling
+  +ExporterOptions Exporters
+  +IDictionary<string, object> ResourceAttributes
+  +IList<string> ActivitySources
+  +IList<Action<TracerProviderBuilder>> TracingEnrichers
+  +IList<Action<MeterProviderBuilder>> MetricsEnrichers
+  +string ActivitySourceName
+}
+
+class SamplingOptions {
+  +SamplingStrategy Strategy
+  +double Probability
+}
+
+enum SamplingStrategy {
+  AlwaysOn
+  AlwaysOff
+  TraceIdRatio
+  ParentBasedTraceIdRatio
+}
+
+class ExporterOptions {
+  +OtlpExporterOptions Otlp
+  +TempoExporterOptions Tempo
+  +ApplicationInsightsExporterOptions ApplicationInsights
+  +bool ConsoleEnabled
+}
+
+class OtlpExporterOptions {
+  +bool Enabled
+  +string Protocol
+  +string Endpoint
+  +string? Headers
+}
+
+class TempoExporterOptions extends OtlpExporterOptions
+
+class ApplicationInsightsExporterOptions {
+  +bool Enabled
+  +string? ConnectionString
+}
+
+interface IActivityTagger {
+  +Apply(Activity, ActivityTagContext)
+}
+
+class ActivityTagger <<strategy>> {
+  -string _environmentName
+  +Apply(...)
+}
+
+interface IActivityEventFactory {
+  +CreateExceptionEvent(Exception, ActivityExceptionEventContext)
+  +CreateProblemDetailsEvent(ActivityProblemDetailsContext)
+}
+
+class ActivityEventFactory <<factory>> {
+  -string _environmentName
+  +CreateExceptionEvent(...)
+  +CreateProblemDetailsEvent(...)
+}
+
+class ActivityTagContext <<record>>
+class ActivityProblemDetailsContext <<record>>
+class ActivityExceptionEventContext <<record>>
+
+ServiceCollectionExtensions --> OpenTelemetryOptions
+OpenTelemetryOptions --> SamplingOptions
+SamplingOptions --> SamplingStrategy
+OpenTelemetryOptions --> ExporterOptions
+ExporterOptions --> OtlpExporterOptions
+ExporterOptions --> TempoExporterOptions
+ExporterOptions --> ApplicationInsightsExporterOptions
+ActivityTagger ..|> IActivityTagger
+ActivityEventFactory ..|> IActivityEventFactory
+ActivityTagger --> ActivityTagContext
+ActivityEventFactory --> ActivityProblemDetailsContext
+ActivityEventFactory --> ActivityExceptionEventContext
+
+note bottom
+  Options objects follow the .NET Options pattern, allowing Demo.Api to configure sampling/exporters,
+  while ActivityTagger/EventFactory supply span metadata consumed by Errors.AspNetCore enrichers.
+end note
+
+@enduml

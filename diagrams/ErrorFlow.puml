@@ -1,0 +1,47 @@
+@startuml
+' Sequence diagram showing end-to-end error flow.
+'title Error Handling Flow – Demo.Api + Errors.AspNetCore
+skinparam dpi 120
+
+actor Client
+participant "Demo.Api\nEndpoint" as Demo
+participant "GlobalExceptionHandler" as Handler
+participant "Mapper Resolver" as Resolver
+participant "ProblemDetailsMapper" as Mapper
+participant "ProblemDetailsFormatter" as Formatter
+participant "SpanEnricher" as Enricher
+participant "ILogger (Logging.Core)" as Logger
+participant "ActivityTagger / EventFactory\n(Observability.OpenTelemetry)" as OTel
+
+Client -> Demo : HTTP request
+Demo -> Demo : Execute handler
+Demo --> Handler : Exception bubbles up
+Handler -> Resolver : Resolve(exception, context)
+activate Resolver
+Resolver -> Mapper : Map(HttpContext, Exception)
+activate Mapper
+Mapper --> Resolver : (status, ProblemDetails)
+deactivate Mapper
+Resolver --> Handler : mapping result
+deactivate Resolver
+Handler -> Formatter : Format(ctx, problem, status)
+activate Formatter
+Formatter --> Handler : (errorId, errorCode)
+deactivate Formatter
+Handler -> Enricher : Enrich(ctx, exception, problem, status, ids)
+activate Enricher
+Enricher -> OTel : Tag Activity + create events
+OTel --> Enricher : Activity updated
+deactivate Enricher
+Handler -> Logger : Log(LogLevel, exception, scope {traceId,errorId})
+Handler -> Formatter : WriteAsync(ctx, problem)
+Formatter --> Handler : response written
+Handler --> Client : ProblemDetails JSON + headers
+
+note over Handler, Enricher
+  Logging.Core supplies the ILogger pipeline.
+  Observability.OpenTelemetry supplies the ActivityTagger/EventFactory
+  consumed by ActivitySpanEnricher to add traces and events.
+end note
+
+@enduml
