@@ -1,29 +1,22 @@
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using System;
 
 namespace Errors.AspNetCore.Sanitization;
 
 /// <summary>
-/// Default implementation that redacts sensitive details unless configured otherwise.
+/// Default implementation that exposes full exception details unless consumers opt in to redaction via <see cref="ExceptionSanitizerOptions"/>.
 /// </summary>
-/// <remarks>
-/// Treats <c>Development</c> and <c>Demo</c> hosts as developer experience environments, exposing the exception message, source,
-/// and stack trace so enriched telemetry can be inspected in Jaeger/Zipkin/Tempo, while Production stays redacted.
-/// </remarks>
 public sealed class ExceptionSanitizer : IExceptionSanitizer
 {
-    private readonly IHostEnvironment _environment;
     private readonly ExceptionSanitizerOptions _options;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ExceptionSanitizer"/> class.
     /// </summary>
-    /// <param name="environment">Host environment used for development detection.</param>
     /// <param name="options">Sanitizer options.</param>
-    public ExceptionSanitizer(IHostEnvironment environment, IOptions<ExceptionSanitizerOptions> options)
+    public ExceptionSanitizer(IOptions<ExceptionSanitizerOptions> options)
     {
-        _environment = environment;
         _options = options.Value ?? new ExceptionSanitizerOptions();
     }
 
@@ -32,40 +25,21 @@ public sealed class ExceptionSanitizer : IExceptionSanitizer
         ArgumentNullException.ThrowIfNull(httpContext);
         ArgumentNullException.ThrowIfNull(exception);
 
-        var includeSensitiveDetails = ShouldIncludeSensitiveDetails(exception);
-        var detail = ResolveDetail(preferredDetail, exception, includeSensitiveDetails, treatPreferredDetailAsSensitive);
+        var treatSensitivePreference = treatPreferredDetailAsSensitive || _options.TreatPreferredDetailAsSensitive;
+        var includeSensitiveDetails = !treatSensitivePreference || ShouldAllowDetails(exception);
 
-        var includeStackTrace = includeSensitiveDetails && _options.IncludeStackTraceInDevelopment && IsDeveloperExperienceEnvironment();
-
-        return new ExceptionSanitizationResult(detail, includeStackTrace);
-    }
-
-    private string ResolveDetail(string? preferredDetail, Exception exception, bool includeSensitiveDetails, bool treatPreferredDetailAsSensitive)
-    {
-        if (!string.IsNullOrWhiteSpace(preferredDetail))
-        {
-            if (!treatPreferredDetailAsSensitive || includeSensitiveDetails)
-            {
-                return includeSensitiveDetails
-                    ? BuildDetailedMessage(preferredDetail, exception)
-                    : preferredDetail;
-            }
-
-            return _options.RedactedDetail;
-        }
-
-        return includeSensitiveDetails
-            ? BuildDetailedMessage(null, exception)
+        var detail = includeSensitiveDetails
+            ? BuildDetailedMessage(preferredDetail, exception)
             : _options.RedactedDetail;
+
+        var includeStackTrace = includeSensitiveDetails && !_options.RedactStackTraces;
+
+        var isRedacted = !includeSensitiveDetails || _options.RedactStackTraces;
+        return new ExceptionSanitizationResult(detail, includeStackTrace, isRedacted);
     }
 
-    private bool ShouldIncludeSensitiveDetails(Exception exception)
+    private bool ShouldAllowDetails(Exception exception)
     {
-        if (IsDeveloperExperienceEnvironment())
-        {
-            return true;
-        }
-
         if (_options.SafeExceptionTypeNames.Contains(exception.GetType().FullName ?? string.Empty))
         {
             return true;
@@ -79,11 +53,7 @@ public sealed class ExceptionSanitizer : IExceptionSanitizer
         return false;
     }
 
-    private bool IsDeveloperExperienceEnvironment()
-        => _environment.IsDevelopment()
-           || string.Equals(_environment.EnvironmentName, "Demo", StringComparison.OrdinalIgnoreCase);
-
-    private static string BuildDetailedMessage(string? preferredDetail, Exception exception)
+    private string BuildDetailedMessage(string? preferredDetail, Exception exception)
     {
         var exceptionMessage = string.IsNullOrWhiteSpace(exception.Message)
             ? "An exception was thrown."
@@ -100,6 +70,16 @@ public sealed class ExceptionSanitizer : IExceptionSanitizer
         }
 
         var source = string.IsNullOrWhiteSpace(exception.Source) ? "unknown" : exception.Source;
+        if (!string.IsNullOrWhiteSpace(preferredDetail))
+        {
+            return $"{detailBase} (Source: {source})";
+        }
+
+        if (_options.SanitizeApiResponses && !_options.SanitizeTelemetry)
+        {
+            return exceptionMessage;
+        }
+
         return $"{detailBase} (Source: {source})";
     }
 }

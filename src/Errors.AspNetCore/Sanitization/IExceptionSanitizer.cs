@@ -4,6 +4,7 @@ namespace Errors.AspNetCore.Sanitization;
 
 /// <summary>
 /// Sanitizes exception details to remove sensitive information before surfacing to clients.
+/// By default the implementation returns the full exception message and stack trace; consumers can opt in to redaction via <see cref="ExceptionSanitizerOptions"/>.
 /// </summary>
 public interface IExceptionSanitizer
 {

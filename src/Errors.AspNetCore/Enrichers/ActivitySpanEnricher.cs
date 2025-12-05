@@ -2,10 +2,12 @@ using Errors.AspNetCore.Sanitization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Observability.OpenTelemetry.Telemetry;
 using System.Diagnostics;
 using System.Net;
+using System.Text;
 
 namespace Errors.AspNetCore.Enrichers;
 
@@ -13,15 +15,14 @@ namespace Errors.AspNetCore.Enrichers;
 /// Default implementation that annotates <see cref="Activity"/> instances with error metadata and ProblemDetails extensions.
 /// </summary>
 /// <remarks>
-/// Adds <c>exception.*</c> (message, stack trace, source) attributes in Development/Demo environments plus <c>problem.*</c> fields
-/// (type, title, status, detail, code, category, error id, trace id, instance, SQL error number) so OTLP exporters surface the full payload.
+/// Adds <c>exception.*</c> (type, message, stack trace, source, full) attributes plus <c>problem.*</c> fields
+/// (code, title, status, detail, instance, trace_id, error_id, sql_error_number, category) so OTLP exporters surface the full payload.
 /// </remarks>
 public sealed class ActivitySpanEnricher(
     IActivityTagger tagger,
     IActivityEventFactory eventFactory,
     ActivitySource activitySource,
-    IExceptionSanitizer sanitizer,
-    IHostEnvironment environment) : ISpanEnricher
+    IExceptionSanitizer sanitizer) : ISpanEnricher
 {
     public void Enrich(HttpContext httpContext, Exception exception, ProblemDetails problemDetails, HttpStatusCode statusCode, string errorId, string errorCode)
     {
@@ -37,6 +38,7 @@ public sealed class ActivitySpanEnricher(
         if (activity is null) return;
 
         activity.SetStatus(ActivityStatusCode.Error);
+        var environmentName = httpContext.RequestServices.GetService<IHostEnvironment>()?.EnvironmentName ?? "unknown";
 
         var tagContext = new ActivityTagContext(
             httpContext.TraceIdentifier,
@@ -46,20 +48,19 @@ public sealed class ActivitySpanEnricher(
             errorCode,
             problemDetails.Type,
             problemDetails.Title,
-            environment.EnvironmentName);
+            environmentName);
 
         tagger.Apply(activity, tagContext);
 
         var sanitized = sanitizer.Sanitize(httpContext, exception, problemDetails.Detail, treatPreferredDetailAsSensitive: false);
-        var isDeveloperEnv = IsDeveloperExperienceEnvironment(environment);
 
-        AddExceptionTags(activity, exception, sanitized, isDeveloperEnv);
+        AddExceptionTags(activity, exception, sanitized);
         AddProblemDetailsTags(activity, problemDetails, statusCode, errorId, httpContext.TraceIdentifier);
 
         var exceptionEventContext = new ActivityExceptionEventContext(
             errorId,
             errorCode,
-            environment.EnvironmentName,
+            environmentName,
             sanitized.Detail,
             sanitized.IncludeStackTrace);
 
@@ -80,67 +81,37 @@ public sealed class ActivitySpanEnricher(
         }
     }
 
-    private static bool IsDeveloperExperienceEnvironment(IHostEnvironment environment)
-        => environment.IsDevelopment()
-           || string.Equals(environment.EnvironmentName, "Demo", StringComparison.OrdinalIgnoreCase);
-
-    private static void AddExceptionTags(Activity activity, Exception exception, ExceptionSanitizationResult sanitized, bool includeSensitive)
+    private static void AddExceptionTags(Activity activity, Exception exception, ExceptionSanitizationResult sanitized)
     {
-        var safeMessage = includeSensitive ? exception.Message : sanitized.Detail;
-        if (!string.IsNullOrWhiteSpace(safeMessage))
-        {
-            activity.SetTag("exception.message", safeMessage);
-        }
+        var exceptionType = sanitized.IsRedacted ? null : exception.GetType().FullName;
+        var message = string.IsNullOrWhiteSpace(exception.Message) ? sanitized.Detail : exception.Message;
+        var normalizedMessage = NormalizeMultiline(message);
+        var normalizedStack = sanitized.IncludeStackTrace && !sanitized.IsRedacted
+            ? NormalizeMultiline(exception.StackTrace)
+            : null;
+        var fullException = sanitized.IsRedacted
+            ? sanitized.Detail
+            : NormalizeMultiline(exception.ToString());
 
-        if (includeSensitive && sanitized.IncludeStackTrace && !string.IsNullOrWhiteSpace(exception.StackTrace))
-        {
-            activity.SetTag("exception.stacktrace", exception.StackTrace);
-        }
-
-        if (includeSensitive && !string.IsNullOrWhiteSpace(exception.Source))
-        {
-            activity.SetTag("exception.source", exception.Source);
-        }
+        SetTagIfValue(activity, "exception.type", exceptionType);
+        SetTagIfValue(activity, "exception.message", normalizedMessage);
+        SetTagIfValue(activity, "exception.stacktrace", normalizedStack);
+        SetTagIfValue(activity, "exception.source", sanitized.IsRedacted ? null : exception.Source);
+        SetTagIfValue(activity, "exception.full", fullException);
     }
 
     private static void AddProblemDetailsTags(Activity activity, ProblemDetails problemDetails, HttpStatusCode fallbackStatus, string errorId, string traceId)
     {
         SetTagIfValue(activity, "problem.type", problemDetails.Type);
+        SetTagIfValue(activity, "problem.code", GetExtensionValue(problemDetails, "code"));
         SetTagIfValue(activity, "problem.title", problemDetails.Title);
         SetTagIfValue(activity, "problem.status", problemDetails.Status ?? (int)fallbackStatus);
-        SetTagIfValue(activity, "problem.detail", problemDetails.Detail);
+        SetTagIfValue(activity, "problem.detail", NormalizeMultiline(problemDetails.Detail));
         SetTagIfValue(activity, "problem.instance", problemDetails.Instance);
-        SetTagIfValue(activity, "problem.error_id", errorId);
-        SetTagIfValue(activity, "problem.trace_id", traceId);
-
-        SetExtensionTag(activity, problemDetails, "code", "problem.code");
-        SetExtensionTag(activity, problemDetails, "category", "problem.category");
-        SetExtensionTag(activity, problemDetails, "errorId", "problem.error_id");
-        SetExtensionTag(activity, problemDetails, "traceId", "problem.trace_id");
-        SetExtensionTag(activity, problemDetails, "sqlErrorNumber", "problem.sql_error_number");
-    }
-
-    private static void SetExtensionTag(Activity activity, ProblemDetails problemDetails, string extensionKey, string tagName)
-    {
-        if (!problemDetails.Extensions.TryGetValue(extensionKey, out var value) || value is null)
-        {
-            return;
-        }
-
-        if (value is string str)
-        {
-            if (string.IsNullOrWhiteSpace(str)) return;
-            activity.SetTag(tagName, str);
-            return;
-        }
-
-        if (value is int or long or double or float or bool)
-        {
-            activity.SetTag(tagName, value);
-            return;
-        }
-
-        activity.SetTag(tagName, value.ToString());
+        SetTagIfValue(activity, "problem.trace_id", GetExtensionValue(problemDetails, "traceId") ?? traceId);
+        SetTagIfValue(activity, "problem.error_id", GetExtensionValue(problemDetails, "errorId") ?? errorId);
+        SetTagIfValue(activity, "problem.sql_error_number", GetExtensionValue(problemDetails, "sqlErrorNumber"));
+        SetTagIfValue(activity, "problem.category", GetExtensionValue(problemDetails, "category"));
     }
 
     private static void SetTagIfValue(Activity activity, string tagName, object? value)
@@ -154,5 +125,46 @@ public sealed class ActivitySpanEnricher(
         }
 
         activity.SetTag(tagName, value);
+    }
+
+    private static string? GetExtensionValue(ProblemDetails problemDetails, string key)
+    {
+        if (!problemDetails.Extensions.TryGetValue(key, out var value) || value is null)
+        {
+            return null;
+        }
+
+        return value switch
+        {
+            string str when string.IsNullOrWhiteSpace(str) => null,
+            string str => str,
+            _ => value.ToString()
+        };
+    }
+
+    private static string? NormalizeMultiline(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return value;
+        }
+
+        var normalized = value.Replace("\r\n", "\n");
+        var segments = normalized.Split('\n');
+        var builder = new StringBuilder();
+        string? previous = null;
+
+        foreach (var segment in segments)
+        {
+            if (string.Equals(segment, previous, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            builder.AppendLine(segment);
+            previous = segment;
+        }
+
+        return builder.ToString().TrimEnd();
     }
 }

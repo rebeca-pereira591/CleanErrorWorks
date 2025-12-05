@@ -13,10 +13,7 @@ Install the package and call the extension during startup:
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddErrorHandling(options =>
-{
-    options.ConfigureExceptionSanitizer(opt => opt.IncludeStackTraceInDevelopment = true);
-});
+builder.Services.AddErrorHandling(); // defaults now expose full details for logs + telemetry
 
 var app = builder.Build();
 app.UseExceptionHandler();
@@ -30,25 +27,24 @@ The package exposes several option objects:
 - `ErrorHandlingOptions` – gateway for configuring the two option types from `AddErrorHandling`.
 
 ### Environment-specific sanitization
-By default the sanitizer treats both `Development` and `Demo` environments as “developer experience” environments. In those environments the middleware keeps the full exception message, adds the exception source to the ProblemDetails detail, and emits stack traces so Jaeger/Zipkin/Tempo can show full diagnostics. In Production (or any other environment name) the sanitizer reverts to `RedactedDetail` and strips stack traces.
-
-You can still override the defaults if needed:
+By default the sanitizer exposes the entire exception object (message, type, stack trace, and source), which means ProblemDetails, logs, and OTLP spans always contain the full error story. If you need to trim details in Production, opt in via `ExceptionSanitizerOptions`:
 
 ```csharp
-if (builder.Environment.IsDevelopment() || builder.Environment.EnvironmentName == "Demo")
-{
-    builder.Services.AddErrorHandling(); // full details, stack traces, telemetry tags
-}
-else
+if (builder.Environment.IsProduction())
 {
     builder.Services.AddErrorHandling(options =>
     {
         options.ConfigureExceptionSanitizer(sanitizer =>
         {
+            sanitizer.TreatPreferredDetailAsSensitive = true;
+            sanitizer.RedactStackTraces = true;
             sanitizer.RedactedDetail = "We hit a snag. Please retry.";
-            sanitizer.IncludeStackTraceInDevelopment = false; // keep prod clean
         });
     });
+}
+else
+{
+    builder.Services.AddErrorHandling(); // Development/Demo keeps full diagnostic context
 }
 ```
 
@@ -59,6 +55,8 @@ builder.Services.AddErrorHandling(options =>
 {
     options.ConfigureExceptionSanitizer(sanitizer =>
     {
+        sanitizer.TreatPreferredDetailAsSensitive = true;
+        sanitizer.RedactStackTraces = true;
         sanitizer.RedactedDetail = "We hit a snag. Please retry.";
         sanitizer.AllowExceptionDetails = ex => ex is ValidationException;
     });
@@ -76,11 +74,25 @@ builder.Services.AddErrorHandling(options =>
 
 | Attribute | Description |
 |-----------|-------------|
-| `exception.message`, `exception.stacktrace`, `exception.source` | Raw exception data (only populated in Development/Demo). |
-| `problem.type`, `problem.title`, `problem.status`, `problem.detail`, `problem.instance` | Core RFC 7807 fields (sanitized in Production). |
-| `problem.code`, `problem.category`, `problem.error_id`, `problem.trace_id`, `problem.sql_error_number` | Metadata surfaced through `ProblemDetails.Extensions`. |
+| `exception.type`, `exception.message`, `exception.stacktrace`, `exception.source`, `exception.full` | Raw exception data (including `Exception.ToString()` in `exception.full`). Sanitization options can suppress type/source/stack. |
+| `problem.code`, `problem.title`, `problem.status`, `problem.detail`, `problem.instance`, `problem.trace_id`, `problem.error_id`, `problem.sql_error_number`, `problem.category` | Sanitized ProblemDetails payload exactly as returned to Swagger clients. |
 
 To customize the exported attributes, register your own `ISpanEnricher` or replace the `IActivityTagger/IActivityEventFactory` implementations.
+
+> **Sanitization reminder:** The `ExceptionSanitizerOptions` flags (`TreatPreferredDetailAsSensitive`, `RedactStackTraces`, `RedactedDetail`) control how much of the raw exception appears in telemetry. Leaving the defaults keeps everything visible; enable the flags in Production to redact.
+
+Example span attributes rendered in Jaeger:
+
+```text
+exception.type = CleanErrorWorks.Payments.PaymentDeclinedException
+exception.message = Card issuer rejected transaction 12345
+exception.full = CleanErrorWorks.Payments.PaymentDeclinedException: Card issuer...\n   at Demo.Api...
+problem.code = PAYMENTS-DECLINED
+problem.status = 402
+problem.detail = Card issuer rejected transaction 12345
+problem.trace_id = 01HKS... 
+problem.error_id = err-6b86b273
+```
 
 ## Extensibility
 - **Custom mappers:** Implement `IExceptionProblemDetailsMapper`, decorate with `ExceptionMapperAttribute`, and register via DI to override or extend behavior.
