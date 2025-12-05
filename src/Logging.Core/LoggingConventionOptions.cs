@@ -1,9 +1,10 @@
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 
 namespace Errors.Logging;
 
+/// <summary>
+/// Represents the knobs exposed by the logging conventions.
+/// </summary>
 public sealed class LoggingConventionOptions
 {
     public bool ClearProviders { get; set; } = true;

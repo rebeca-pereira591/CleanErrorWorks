@@ -5,6 +5,12 @@ namespace Errors.Logging.Internal;
 
 internal static class LoggingBuilderConfigurator
 {
+    /// <summary>
+    /// Applies the configured conventions to the provided <see cref="ILoggingBuilder"/>.
+    /// </summary>
+    /// <param name="builder">Builder being configured.</param>
+    /// <param name="configuration">Optional configuration source.</param>
+    /// <param name="options">Convention options.</param>
     public static void Apply(ILoggingBuilder builder, IConfiguration? configuration, LoggingConventionOptions options)
     {
         ArgumentNullException.ThrowIfNull(builder);
