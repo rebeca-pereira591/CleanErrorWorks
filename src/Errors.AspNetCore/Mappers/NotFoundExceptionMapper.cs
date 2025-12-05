@@ -4,15 +4,18 @@ using Errors.AspNetCore.Registry;
 using Errors.AspNetCore.Sanitization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System;
 using System.Net;
 
 namespace Errors.AspNetCore.Mappers;
 
+/// <summary>
+/// Maps <see cref="NotFoundException"/> instances to HTTP 404 responses.
+/// </summary>
 [ExceptionMapper(priority: 800)]
 public sealed class NotFoundExceptionMapper(IExceptionSanitizer sanitizer)
     : ExceptionProblemDetailsMapper<NotFoundException>(sanitizer)
 {
+    /// <inheritdoc />
     protected override (HttpStatusCode, ProblemDetails) MapTyped(HttpContext ctx, NotFoundException ex)
     {
         var status = ex.PreferredStatus ?? HttpStatusCode.NotFound;

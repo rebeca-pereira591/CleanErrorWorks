@@ -1,10 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
-using System.Collections.Generic;
 
 namespace Errors.AspNetCore.Mappers;
 
 internal static class ValidationMappingExtensions
 {
+    /// <summary>
+    /// Converts validation errors into <see cref="ModelStateDictionary"/> entries.
+    /// </summary>
+    /// <param name="errors">Dictionary keyed by field name.</param>
+    /// <returns>A populated <see cref="ModelStateDictionary"/>.</returns>
     public static ModelStateDictionary ToModelState(
         this IReadOnlyDictionary<string, string[]> errors)
     {

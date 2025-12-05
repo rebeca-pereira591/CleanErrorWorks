@@ -8,6 +8,9 @@ using System.Net;
 
 namespace Errors.AspNetCore.Mappers;
 
+/// <summary>
+/// Maps <see cref="HttpRequestException"/> instances to gateway error responses.
+/// </summary>
 [ExceptionMapper(priority: 300)]
 public sealed class HttpRequestExceptionMapper(IExceptionSanitizer sanitizer) : IExceptionProblemDetailsMapper
 {

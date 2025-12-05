@@ -1,14 +1,13 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
 using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Errors.AspNetCore.Formatters;
 
+/// <summary>
+/// Default implementation that ensures outgoing responses meet CleanErrorWorks conventions.
+/// </summary>
 public sealed class ProblemDetailsFormatter(IOptions<ProblemDetailsExtensionValidationOptions> validationOptions) : IProblemDetailsFormatter
 {
     private readonly ProblemDetailsExtensionValidationOptions _validationOptions = validationOptions.Value ?? new ProblemDetailsExtensionValidationOptions();

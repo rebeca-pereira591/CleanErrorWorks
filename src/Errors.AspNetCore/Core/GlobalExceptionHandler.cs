@@ -3,11 +3,13 @@ using Errors.AspNetCore.Formatters;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Errors.AspNetCore.Core;
 
+/// <summary>
+/// Centralizes exception handling for ASP.NET Core by mapping, formatting, logging, and enriching telemetry for failures.
+/// </summary>
 public sealed class GlobalExceptionHandler(
     IExceptionMapperResolver mapperResolver,
     ISpanEnricher spanEnricher,
@@ -15,6 +17,13 @@ public sealed class GlobalExceptionHandler(
     ILogger<GlobalExceptionHandler> logger
 ) : IExceptionHandler
 {
+    /// <summary>
+    /// Resolves the incoming exception into <see cref="ProblemDetails"/>, enriches telemetry, logs the event, and writes the response.
+    /// </summary>
+    /// <param name="httpContext">Current request context.</param>
+    /// <param name="exception">Exception to handle.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns><c>true</c> when the exception was fully handled.</returns>
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,

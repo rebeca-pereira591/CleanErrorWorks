@@ -9,6 +9,9 @@ using System.Net;
 
 namespace Errors.AspNetCore.Mappers;
 
+/// <summary>
+/// Maps <see cref="ValidationException"/> instances into RFC 7807 payloads.
+/// </summary>
 [ExceptionMapper(priority: 900)]
 public sealed class ValidationExceptionMapper(IExceptionSanitizer sanitizer)
     : ExceptionProblemDetailsMapper<ValidationException>(sanitizer)

@@ -9,6 +9,9 @@ using System.Net;
 
 namespace Errors.AspNetCore.Mappers;
 
+/// <summary>
+/// Maps <see cref="RateLimitException"/> instances to ProblemDetails responses.
+/// </summary>
 [ExceptionMapper(priority: 600)]
 public sealed class RateLimitExceptionMapper(IExceptionSanitizer sanitizer) : ExceptionProblemDetailsMapper<RateLimitException>(sanitizer)
 {

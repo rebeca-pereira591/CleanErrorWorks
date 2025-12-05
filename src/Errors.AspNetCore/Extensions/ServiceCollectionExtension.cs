@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Errors.AspNetCore.Classifiers;
 using Errors.AspNetCore.Core;
 using Errors.AspNetCore.Enrichers;
@@ -14,8 +13,17 @@ using Observability.OpenTelemetry.Telemetry;
 
 namespace Errors.AspNetCore.Extensions;
 
+/// <summary>
+/// Provides extension methods for registering the error handling pipeline.
+/// </summary>
 public static class ServiceCollectionExtension
 {
+    /// <summary>
+    /// Adds the CleanErrorWorks exception handling infrastructure to the service collection.
+    /// </summary>
+    /// <param name="services">Target service collection.</param>
+    /// <param name="configure">Optional callback for <see cref="ErrorHandlingOptions"/>.</param>
+    /// <returns>The same <see cref="IServiceCollection"/>.</returns>
     public static IServiceCollection AddErrorHandling(this IServiceCollection services, Action<ErrorHandlingOptions>? configure = null)
     {
         var errorHandlingOptions = new ErrorHandlingOptions();
@@ -60,6 +68,11 @@ public static class ServiceCollectionExtension
 
         services.AddSingleton<IExceptionProblemDetailsMapper, UnknownExceptionMapper>();
 
+        foreach (var mapperType in errorHandlingOptions.MapperTypes)
+            services.AddSingleton(typeof(IExceptionProblemDetailsMapper), mapperType);
+
+        EnsureFallbackMapperRegistered(services);
+
         services.AddSingleton<IExceptionMapperRegistry, ExceptionMapperRegistry>();
         services.AddSingleton<IExceptionMapperResolver, ExceptionMapperResolver>();
 
@@ -72,5 +85,18 @@ public static class ServiceCollectionExtension
 
         services.AddExceptionHandler<GlobalExceptionHandler>();
         return services;
+    }
+
+    private static void EnsureFallbackMapperRegistered(IServiceCollection services)
+    {
+        var hasFallback = services.Any(sd =>
+            sd.ServiceType == typeof(IExceptionProblemDetailsMapper)
+            && sd.ImplementationType is { } implementationType
+            && implementationType.GetCustomAttributes(typeof(ExceptionMapperAttribute), false)
+                .OfType<ExceptionMapperAttribute>()
+                .Any(attr => attr.IsFallback));
+
+        if (!hasFallback)
+            throw new InvalidOperationException($"At least one {nameof(IExceptionProblemDetailsMapper)} must be decorated with {nameof(ExceptionMapperAttribute)} and have IsFallback=true.");
     }
 }

@@ -4,11 +4,13 @@ using Errors.AspNetCore.Sanitization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Polly.Timeout;
-using System;
 using System.Net;
 
 namespace Errors.AspNetCore.Mappers;
 
+/// <summary>
+/// Maps Polly <see cref="TimeoutRejectedException"/> instances to HTTP 504 responses.
+/// </summary>
 [ExceptionMapper(priority: 200)]
 public sealed class TimeoutRejectedExceptionMapper(IExceptionSanitizer sanitizer) : IExceptionProblemDetailsMapper
 {

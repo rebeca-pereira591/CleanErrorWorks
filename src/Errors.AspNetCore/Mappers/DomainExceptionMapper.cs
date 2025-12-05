@@ -4,11 +4,13 @@ using Errors.AspNetCore.Registry;
 using Errors.AspNetCore.Sanitization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System;
 using System.Net;
 
 namespace Errors.AspNetCore.Mappers;
 
+/// <summary>
+/// Maps <see cref="DomainException"/> into ProblemDetails responses.
+/// </summary>
 [ExceptionMapper(priority: 500)]
 public sealed class DomainExceptionMapper(IExceptionSanitizer sanitizer) : ExceptionProblemDetailsMapper<DomainException>(sanitizer)
 {

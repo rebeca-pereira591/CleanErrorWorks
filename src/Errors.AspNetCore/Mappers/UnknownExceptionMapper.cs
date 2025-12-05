@@ -8,6 +8,9 @@ using System.Net;
 
 namespace Errors.AspNetCore.Mappers;
 
+/// <summary>
+/// Final fallback mapper that hides unexpected exception details.
+/// </summary>
 [ExceptionMapper(priority: 0, IsFallback = true)]
 public sealed class UnknownExceptionMapper(IExceptionSanitizer sanitizer) : IExceptionProblemDetailsMapper
 {

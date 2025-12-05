@@ -3,8 +3,16 @@ using System.Net;
 
 namespace Errors.AspNetCore.Classifiers;
 
+/// <summary>
+/// Provides mappings between SQL Server error numbers and HTTP/ProblemDetails metadata.
+/// </summary>
 public sealed class SqlServerErrorClassifier
 {
+    /// <summary>
+    /// Maps a SQL Server error number to HTTP semantics and a structured <see cref="ErrorCode"/>.
+    /// </summary>
+    /// <param name="number">SQL Server error number.</param>
+    /// <returns>A tuple containing HTTP status, error code, and a transient flag.</returns>
     public (HttpStatusCode status, ErrorCode code, bool transient) Classify(int number)
         => number switch
         {

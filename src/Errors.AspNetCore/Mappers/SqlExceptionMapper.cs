@@ -5,11 +5,13 @@ using Errors.AspNetCore.Sanitization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
-using System;
 using System.Net;
 
 namespace Errors.AspNetCore.Mappers;
 
+/// <summary>
+/// Maps <see cref="SqlException"/> instances using <see cref="SqlServerErrorClassifier"/>.
+/// </summary>
 [ExceptionMapper(priority: 450)]
 public sealed class SqlExceptionMapper(SqlServerErrorClassifier classifier, IExceptionSanitizer sanitizer)
     : IExceptionProblemDetailsMapper

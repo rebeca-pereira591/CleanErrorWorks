@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Errors.AspNetCore.Formatters;
 
@@ -14,6 +12,11 @@ internal static class ProblemDetailsExtensionsValidator
         typeof(Guid), typeof(DateTime), typeof(DateTimeOffset)
     };
 
+    /// <summary>
+    /// Validates the extension entries to ensure they meet configured limits.
+    /// </summary>
+    /// <param name="problemDetails">Problem payload to sanitize.</param>
+    /// <param name="options">Validation configuration.</param>
     public static void Validate(ProblemDetails problemDetails, ProblemDetailsExtensionValidationOptions options)
     {
         if (problemDetails is null) throw new ArgumentNullException(nameof(problemDetails));

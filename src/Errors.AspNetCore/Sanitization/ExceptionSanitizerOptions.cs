@@ -1,8 +1,12 @@
-using System;
-using System.Collections.Generic;
-
 namespace Errors.AspNetCore.Sanitization;
 
+/// <summary>
+/// Defines how exception details should be redacted or exposed.
+/// </summary>
+/// <remarks>
+/// The default sanitizer treats both <c>Development</c> and <c>Demo</c> environments as developer-facing,
+/// which means stack traces, the full exception message, and the exception source are surfaced automatically.
+/// </remarks>
 public sealed class ExceptionSanitizerOptions
 {
     public string RedactedDetail { get; set; } = "An unexpected error occurred.";

@@ -4,11 +4,13 @@ using Errors.AspNetCore.Registry;
 using Errors.AspNetCore.Sanitization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System;
 using System.Net;
 
 namespace Errors.AspNetCore.Mappers;
 
+/// <summary>
+/// Maps any remaining <see cref="IAppError"/> implementations that lack a specific mapper.
+/// </summary>
 [ExceptionMapper(priority: 100, IsFallback = true)]
 public sealed class AppErrorFallbackMapper(IExceptionSanitizer sanitizer) : IExceptionProblemDetailsMapper
 {

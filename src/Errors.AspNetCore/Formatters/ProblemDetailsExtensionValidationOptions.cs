@@ -1,5 +1,8 @@
 namespace Errors.AspNetCore.Formatters;
 
+/// <summary>
+/// Controls how extensions on <see cref="ProblemDetails"/> are validated and truncated.
+/// </summary>
 public sealed class ProblemDetailsExtensionValidationOptions
 {
     public int MaxExtensions { get; set; } = 20;
