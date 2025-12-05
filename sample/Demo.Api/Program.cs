@@ -1,4 +1,5 @@
 ﻿using Demo.Api;
+using Demo.Api.Payments;
 using Demo.Api.Stubs;
 using Errors.Abstractions.Exceptions;
 using Errors.AspNetCore.Extensions;
@@ -12,7 +13,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 builder.Services.AddControllers();
-builder.Services.AddErrorHandling();
+builder.Services.AddErrorHandling(options =>
+{
+    // Register a consumer-defined mapper with explicit priority; the built-in UnknownExceptionMapper remains the
+    // fallback to avoid registry errors when nothing matches.
+    options.RegisterMapper<PaymentDeclinedExceptionMapper>();
+});
 builder.Services.AddDefaultLogging(builder.Configuration);
 builder.Services.AddDefaultOpenTelemetry(builder.Configuration);
 
@@ -110,6 +116,16 @@ app.MapGet("/ext/ok", async (ExternalClient c) => Results.Text(await c.GetAsync(
 app.MapGet("/ext/slow", async (ExternalClient c) => Results.Text(await c.GetAsync("/slow")));  
 app.MapGet("/ext/flaky", async (ExternalClient c) => Results.Text(await c.GetAsync("/flaky"))); 
 app.MapGet("/ext/rate", async (ExternalClient c) => Results.Text(await c.GetAsync("/rate"))); 
-app.MapGet("/ext/boom", async (ExternalClient c) => Results.Text(await c.GetAsync("/boom"))); 
+app.MapGet("/ext/boom", async (ExternalClient c) => Results.Text(await c.GetAsync("/boom")));
+
+app.MapPost("/payments/decline", (string? reason) =>
+{
+    // This demonstrates how a consumer-provided exception flows through the mapper registry.
+    var detail = string.IsNullOrWhiteSpace(reason)
+        ? "Payment was declined by the issuer"
+        : reason;
+
+    throw new PaymentDeclinedException(detail, isTransient: false, preferredStatus: System.Net.HttpStatusCode.PaymentRequired);
+});
 
 app.Run();
