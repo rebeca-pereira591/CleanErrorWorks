@@ -45,6 +45,7 @@ Each exporter (`OtlpExporterOptions`, `TempoExporterOptions`, `ApplicationInsigh
 - **Additional ActivitySources:** Add values to `OpenTelemetryOptions.ActivitySources` for instrumentation beyond ASP.NET Core/HttpClient.
 - **Exporter hooks:** Append delegates to `TracingEnrichers` or `MetricsEnrichers` to register additional instrumentation or processors.
 - **ProblemDetails telemetry:** The default `ActivitySpanEnricher` pushes `exception.*` and `problem.*` attributes (type, title, status, detail, code, category, errorId, traceId, instance, sqlErrorNumber). Replace the enricher if you want to trim or add attributes before OTLP export.
+ - **ProblemDetails telemetry:** The default `ActivitySpanEnricher` pushes `exception.type/message/stacktrace/source/full` plus the `problem.*` attributes (`code`, `title`, `status`, `detail`, `instance`, `trace_id`, `error_id`, `sql_error_number`, `category`). Replace the enricher if you want to trim or add attributes before OTLP export, or configure `ExceptionSanitizerOptions` to redact before the enricher sees the data.
 
 ## Examples
 ```csharp
