@@ -1,8 +1,8 @@
 ﻿using Demo.Api;
 using Demo.Api.Stubs;
 using Errors.Abstractions.Exceptions;
-using Errors.AspNetCore;
-using Logging.Core;
+using Errors.AspNetCore.Extensions;
+using Errors.Logging;
 using Microsoft.Extensions.Http.Resilience;
 using Observability.OpenTelemetry;
 using Polly;
@@ -11,9 +11,10 @@ using Polly;
 var builder = WebApplication.CreateBuilder(args);
 
 
-builder.Services.AddDefaultOpenTelemetry(builder.Configuration, serviceName: "Demo.Api");
-builder.Services.AddLoggingConventions();
+builder.Services.AddControllers();
 builder.Services.AddErrorHandling();
+builder.Services.AddDefaultLogging(builder.Configuration);
+builder.Services.AddDefaultOpenTelemetry(builder.Configuration);
 
 
 builder.Services.AddEndpointsApiExplorer();
@@ -53,6 +54,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+
+app.MapControllers();
 
 // Endpoints
 app.MapGet("/ok", () => Results.Ok(new { message = "it works", traceId = Guid.NewGuid() }))
