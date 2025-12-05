@@ -1,5 +1,8 @@
 namespace Observability.OpenTelemetry.Options;
 
+/// <summary>
+/// Represents the configurable knobs for wiring OpenTelemetry tracing and metrics.
+/// </summary>
 public sealed class OpenTelemetryOptions
 {
     public string? ServiceName { get; set; }
@@ -20,6 +23,9 @@ public sealed class OpenTelemetryOptions
 
     public string ActivitySourceName => ServiceName ?? AppDomain.CurrentDomain.FriendlyName;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="OpenTelemetryOptions"/> class with sensible defaults.
+    /// </summary>
     public OpenTelemetryOptions()
     {
         ResourceAttributes["deployment.environment"] = Environment;

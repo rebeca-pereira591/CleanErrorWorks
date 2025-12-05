@@ -14,8 +14,18 @@ using OtlpExporterOptionsBuilder = OpenTelemetry.Exporter.OtlpExporterOptions;
 
 namespace Observability.OpenTelemetry;
 
+/// <summary>
+/// Provides extension methods for wiring the CleanErrorWorks OpenTelemetry defaults.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Adds tracing and metrics instrumentation configured via <see cref="OpenTelemetryOptions"/>.
+    /// </summary>
+    /// <param name="services">Service collection being configured.</param>
+    /// <param name="configuration">Optional configuration source bound to <c>OpenTelemetry</c>.</param>
+    /// <param name="configure">Optional callback for programmatic adjustments.</param>
+    /// <returns>The same <see cref="IServiceCollection"/> for chaining.</returns>
     public static IServiceCollection AddDefaultOpenTelemetry(
         this IServiceCollection services,
         IConfiguration? configuration = null,

@@ -1,5 +1,8 @@
 namespace Observability.OpenTelemetry.Options;
 
+/// <summary>
+/// Groups exporter-specific settings for tracing and metrics.
+/// </summary>
 public sealed class ExporterOptions
 {
     public OtlpExporterOptions Otlp { get; } = new() { Enabled = true, Endpoint = "http://localhost:4318" };
@@ -12,6 +15,9 @@ public sealed class ExporterOptions
         = false;
 }
 
+/// <summary>
+/// Represents settings for an OTLP exporter target.
+/// </summary>
 public class OtlpExporterOptions
 {
     public bool Enabled { get; set; }
@@ -25,6 +31,9 @@ public class OtlpExporterOptions
         = null;
 }
 
+/// <summary>
+/// Provides strongly typed defaults for Tempo-compatible OTLP export.
+/// </summary>
 public sealed class TempoExporterOptions : OtlpExporterOptions
 {
     public TempoExporterOptions()
@@ -33,6 +42,9 @@ public sealed class TempoExporterOptions : OtlpExporterOptions
     }
 }
 
+/// <summary>
+/// Configures Azure Application Insights export behavior.
+/// </summary>
 public sealed class ApplicationInsightsExporterOptions
 {
     public bool Enabled { get; set; }

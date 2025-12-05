@@ -4,6 +4,9 @@ using System.Diagnostics;
 
 namespace Observability.OpenTelemetry.Telemetry;
 
+/// <summary>
+/// Default strategy that enriches <see cref="Activity"/> instances with CleanErrorWorks specific tags.
+/// </summary>
 public sealed class ActivityTagger(IOptions<OpenTelemetryOptions> optionsAccessor) : IActivityTagger
 {
     private readonly string _environmentName = optionsAccessor.Value.Environment;
@@ -26,6 +29,9 @@ public sealed class ActivityTagger(IOptions<OpenTelemetryOptions> optionsAccesso
     }
 }
 
+/// <summary>
+/// Produces <see cref="ActivityEvent"/> instances that capture exception and ProblemDetails information.
+/// </summary>
 public sealed class ActivityEventFactory(IOptions<OpenTelemetryOptions> optionsAccessor) : IActivityEventFactory
 {
     private readonly string _environmentName = optionsAccessor.Value.Environment;

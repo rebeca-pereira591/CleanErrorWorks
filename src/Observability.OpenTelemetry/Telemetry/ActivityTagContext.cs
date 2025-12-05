@@ -1,5 +1,8 @@
 namespace Observability.OpenTelemetry.Telemetry;
 
+/// <summary>
+/// Describes the HTTP and error context needed to apply Activity tags.
+/// </summary>
 public sealed record ActivityTagContext(
     string TraceIdentifier,
     string RequestPath,
@@ -10,6 +13,9 @@ public sealed record ActivityTagContext(
     string? ProblemTitle,
     string EnvironmentName);
 
+/// <summary>
+/// Holds ProblemDetails information for generating telemetry events.
+/// </summary>
 public sealed record ActivityProblemDetailsContext(
     string ErrorId,
     string ErrorCode,
@@ -18,6 +24,9 @@ public sealed record ActivityProblemDetailsContext(
     int StatusCode,
     string RequestPath);
 
+/// <summary>
+/// Represents the metadata required to build exception-related Activity events.
+/// </summary>
 public sealed record ActivityExceptionEventContext(
     string ErrorId,
     string ErrorCode,
