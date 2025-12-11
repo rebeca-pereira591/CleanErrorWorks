@@ -10,23 +10,19 @@ processors:
   batch: {}
 
 exporters:
-  # Jaeger (vía OTLP/HTTP al all-in-one)
   otlphttp/jaeger:
     endpoint: http://jaeger:4318
     tls:
       insecure: true
 
-  # Zipkin directo
   zipkin:
     endpoint: http://zipkin:9411/api/v2/spans
 
-  # Tempo (vía OTLP/HTTP)
   otlphttp/tempo:
     endpoint: http://tempo:4318
     tls:
       insecure: true
 
-  # Debug a stdout del collector (útil para ver que llegan spans)
   debug:
     verbosity: detailed
 

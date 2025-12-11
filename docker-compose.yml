@@ -19,7 +19,7 @@ services:
       - ./otelcol-config.yaml:/etc/otelcol-config.yaml
     ports:
       - "4317:4317" # OTLP gRPC
-      - "4318:4318" # OTLP HTTP (tu app usa este)
+      - "4318:4318" # OTLP HTTP
     depends_on:
       - jaeger
       - zipkin
@@ -41,8 +41,7 @@ services:
     volumes:
       - ./tempo.yaml:/etc/tempo.yaml
     ports:
-      - "3200:3200" # API para Grafana (consulta)
-    # SIN 4318 en host; ingest OTLP HTTP solo dentro de la red docker
+      - "3200:3200"
 
   grafana:
     image: grafana/grafana:latest
