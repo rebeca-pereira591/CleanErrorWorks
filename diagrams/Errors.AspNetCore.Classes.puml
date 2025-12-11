@@ -1,0 +1,79 @@
+@startuml
+' Class diagram for Errors.AspNetCore mapper strategy hierarchy.
+' NOTE: `TException` is a generic type parameter in C# and remains abstract here.
+'title Errors.AspNetCore – Class Diagram
+skinparam classAttributeIconSize 0
+skinparam dpi 120
+
+interface IExceptionProblemDetailsMapper <<strategy>> {
+  +bool CanHandle(Exception)
+  +(HttpStatusCode, ProblemDetails) Map(HttpContext, Exception)
+}
+
+abstract class "ExceptionProblemDetailsMapper<TException>" <<template>> {
+  -IExceptionSanitizer Sanitizer
+  +bool CanHandle(Exception)
+  +(HttpStatusCode, ProblemDetails) Map(HttpContext, Exception)
+  #{abstract} MapTyped(HttpContext, TException)
+}
+
+class ValidationExceptionMapper <<strategy>>
+class DomainExceptionMapper <<strategy>>
+class AuthorizationExceptionMapper <<strategy>>
+class RateLimitExceptionMapper <<strategy>>
+class NotFoundExceptionMapper <<strategy>>
+class SqlExceptionMapper <<strategy>>
+class TimeoutRejectedExceptionMapper <<strategy>>
+class HttpRequestExceptionMapper <<strategy>>
+class AppErrorFallbackMapper <<strategy>>
+class UnknownExceptionMapper <<strategy>>
+
+"ExceptionProblemDetailsMapper<TException>" ..|> IExceptionProblemDetailsMapper
+ValidationExceptionMapper --|> "ExceptionProblemDetailsMapper<TException>"
+DomainExceptionMapper --|> "ExceptionProblemDetailsMapper<TException>"
+AuthorizationExceptionMapper --|> "ExceptionProblemDetailsMapper<TException>"
+RateLimitExceptionMapper --|> "ExceptionProblemDetailsMapper<TException>"
+NotFoundExceptionMapper --|> "ExceptionProblemDetailsMapper<TException>"
+SqlExceptionMapper --|> "ExceptionProblemDetailsMapper<TException>"
+TimeoutRejectedExceptionMapper --|> "ExceptionProblemDetailsMapper<TException>"
+HttpRequestExceptionMapper --|> "ExceptionProblemDetailsMapper<TException>"
+AppErrorFallbackMapper --|> "ExceptionProblemDetailsMapper<TException>"
+UnknownExceptionMapper --|> "ExceptionProblemDetailsMapper<TException>"
+
+class ExceptionMapperRegistry {
+  -IReadOnlyList<MapperRegistration> _primary
+  -IReadOnlyList<MapperRegistration> _fallback
+  +Resolve(Exception): IExceptionProblemDetailsMapper
+}
+
+class ExceptionMapperResolver {
+  -IExceptionMapperRegistry registry
+  +Resolve(HttpContext, Exception): (HttpStatusCode, ProblemDetails)
+}
+
+class ExceptionMapperAttribute {
+  +int Priority
+  +bool IsFallback
+}
+
+class GlobalExceptionHandler {
+  -IExceptionMapperResolver mapperResolver
+  -ISpanEnricher spanEnricher
+  -IProblemDetailsFormatter formatter
+  -ILogger logger
+  +TryHandleAsync(HttpContext, Exception, CancellationToken): ValueTask<bool>
+}
+
+ExceptionMapperRegistry --> IExceptionProblemDetailsMapper : stores strategies
+ExceptionMapperRegistry --> ExceptionMapperAttribute : reads priority
+ExceptionMapperResolver --> ExceptionMapperRegistry
+GlobalExceptionHandler --> ExceptionMapperResolver
+GlobalExceptionHandler --> IProblemDetailsFormatter
+GlobalExceptionHandler --> ISpanEnricher
+GlobalExceptionHandler --> ILogger
+
+note as NPattern
+  Strategy hierarchy relies on a Template Method (`MapTyped`) inside the generic base class.
+end note
+
+@enduml

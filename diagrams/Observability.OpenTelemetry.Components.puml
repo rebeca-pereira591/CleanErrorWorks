@@ -1,0 +1,41 @@
+@startuml
+' Component diagram for Observability.OpenTelemetry services.
+'title Observability.OpenTelemetry – Component Diagram
+skinparam componentStyle rectangle
+skinparam dpi 120
+
+component "ServiceCollectionExtensions\n(AddDefaultOpenTelemetry)" <<component>> as ServiceExt
+component "OpenTelemetryOptions" <<configuration>> as Options
+component "ResourceBuilder" <<component>> as Resource
+component "OpenTelemetry Builder" <<component>> as Builder
+component "Tracing Pipeline" <<component>> as Tracing
+component "Metrics Pipeline" <<component>> as Metrics
+component "ActivityTagger" <<component>> as Tagger
+component "ActivityEventFactory" <<component>> as EventFactory
+component "IActivityTagger" <<interface>> as ITagger
+component "IActivityEventFactory" <<interface>> as IEventFactory
+component "Exporters (OTLP/Tempo/Console/AI)" <<component>> as Exporters
+component "Errors.AspNetCore" <<external>> as Errors
+component "Demo.Api" <<external>> as Demo
+
+Demo --> ServiceExt : IServiceCollection
+ServiceExt --> Options : bind cfg + configure lambda
+ServiceExt --> Resource : BuildResource(options)
+ServiceExt --> Builder : services.AddOpenTelemetry()
+Builder --> Tracing : When options.EnableTracing
+Builder --> Metrics : When options.EnableMetrics
+Tracing --> Exporters
+Metrics --> Exporters
+ServiceExt --> Tagger
+ServiceExt --> EventFactory
+Tagger ..|> ITagger
+EventFactory ..|> IEventFactory
+Errors --> ITagger : ISpanEnricher dependencies
+Errors --> IEventFactory
+
+note bottom
+  Extension wires resource metadata, samplers, and exporters while exposing ActivityTagger/EventFactory
+  used downstream by Errors.AspNetCore to annotate spans with error context.
+end note
+
+@enduml

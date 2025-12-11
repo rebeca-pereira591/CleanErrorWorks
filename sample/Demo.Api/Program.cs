@@ -1,8 +1,9 @@
 ﻿using Demo.Api;
+using Demo.Api.Payments;
 using Demo.Api.Stubs;
 using Errors.Abstractions.Exceptions;
-using Errors.AspNetCore;
-using Logging.Core;
+using Errors.AspNetCore.Extensions;
+using Errors.Logging;
 using Microsoft.Extensions.Http.Resilience;
 using Observability.OpenTelemetry;
 using Polly;
@@ -11,9 +12,15 @@ using Polly;
 var builder = WebApplication.CreateBuilder(args);
 
 
-builder.Services.AddDefaultOpenTelemetry(builder.Configuration, serviceName: "Demo.Api");
-builder.Services.AddLoggingConventions();
-builder.Services.AddErrorHandling();
+builder.Services.AddControllers();
+builder.Services.AddErrorHandling(options =>
+{
+    // Register a consumer-defined mapper with explicit priority; the built-in UnknownExceptionMapper remains the
+    // fallback to avoid registry errors when nothing matches.
+    options.RegisterMapper<PaymentDeclinedExceptionMapper>();
+});
+builder.Services.AddDefaultLogging(builder.Configuration);
+builder.Services.AddDefaultOpenTelemetry(builder.Configuration);
 
 
 builder.Services.AddEndpointsApiExplorer();
@@ -53,6 +60,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+
+app.MapControllers();
 
 // Endpoints
 app.MapGet("/ok", () => Results.Ok(new { message = "it works", traceId = Guid.NewGuid() }))
@@ -107,6 +116,16 @@ app.MapGet("/ext/ok", async (ExternalClient c) => Results.Text(await c.GetAsync(
 app.MapGet("/ext/slow", async (ExternalClient c) => Results.Text(await c.GetAsync("/slow")));  
 app.MapGet("/ext/flaky", async (ExternalClient c) => Results.Text(await c.GetAsync("/flaky"))); 
 app.MapGet("/ext/rate", async (ExternalClient c) => Results.Text(await c.GetAsync("/rate"))); 
-app.MapGet("/ext/boom", async (ExternalClient c) => Results.Text(await c.GetAsync("/boom"))); 
+app.MapGet("/ext/boom", async (ExternalClient c) => Results.Text(await c.GetAsync("/boom")));
+
+app.MapPost("/payments/decline", (string? reason) =>
+{
+    // This demonstrates how a consumer-provided exception flows through the mapper registry.
+    var detail = string.IsNullOrWhiteSpace(reason)
+        ? "Payment was declined by the issuer"
+        : reason;
+
+    throw new PaymentDeclinedException(detail, isTransient: false, preferredStatus: System.Net.HttpStatusCode.PaymentRequired);
+});
 
 app.Run();

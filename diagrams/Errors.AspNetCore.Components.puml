@@ -1,0 +1,48 @@
+@startuml
+' Component diagram showing core building blocks inside Errors.AspNetCore.
+'title Errors.AspNetCore – Component Diagram
+skinparam componentStyle rectangle
+skinparam dpi 120
+
+component "GlobalExceptionHandler" <<component>> as Handler
+component "ExceptionMapperResolver" <<component>> as Resolver
+component "ExceptionMapperRegistry" <<component>> as Registry
+component "ExceptionProblemDetailsMapper" <<interface>> as Mapper
+component "ProblemDetailsFormatter" <<component>> as Formatter
+component "IExceptionSanitizer" <<interface>> as Sanitizer
+component "ExceptionSanitizer" <<component>> as SanitizerImpl
+component "ISpanEnricher" <<interface>> as Enricher
+component "ActivitySpanEnricher" <<component>> as SpanEnricher
+component "IActivityTagger" <<interface>> as Tagger
+component "IActivityEventFactory" <<interface>> as EventFactory
+component "ILogger<GlobalExceptionHandler>" <<interface>> as Logger
+component "Demo.Api" <<external>> as Demo
+component "Observability.OpenTelemetry" <<external>> as Observability
+component "Logging.Core" <<external>> as Logging
+component "Errors.Abstractions" <<external>> as Abstractions
+
+Demo --> Handler : Exception handler pipeline
+Handler --> Resolver : resolve(exception)
+Resolver --> Registry : priority lookup
+Registry --> Mapper : Strategy selection
+Mapper --> Sanitizer : sanitize detail
+SanitizerImpl ..|> Sanitizer
+Handler --> Formatter : format/write ProblemDetails
+Handler --> SpanEnricher : enrich spans/logs
+SpanEnricher ..|> Enricher
+SpanEnricher --> Tagger
+SpanEnricher --> EventFactory
+Handler --> Logger : structured logging
+
+Observability --> Tagger
+Observability --> EventFactory
+Logging --> Logger
+Abstractions --> Mapper : domain exceptions metadata
+
+note bottom
+  GlobalExceptionHandler orchestrates resolution, formatting, sanitization, enrichment,
+  while relying on other projects for shared contracts (Errors.Abstractions), logging (Logging.Core)
+  and telemetry helpers (Observability.OpenTelemetry).
+end note
+
+@enduml

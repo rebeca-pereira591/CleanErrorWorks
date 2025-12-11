@@ -1,0 +1,35 @@
+@startuml
+' Component diagram for Demo.Api and consumed packages.
+'title Demo.Api – Component Diagram
+skinparam componentStyle rectangle
+skinparam dpi 120
+
+component "Demo.Api" <<component>> as Demo
+component "Minimal API Endpoints" <<component>> as Endpoints
+component "SqlTestService" <<component>> as SqlSvc
+component "ExternalClient" <<component>> as ExtClient
+component "Errors.AspNetCore\n(AddErrorHandling)" <<library>> as ErrorsAsp
+component "Errors.Abstractions" <<library>> as ErrorsAbs
+component "Logging.Core\n(AddDefaultLogging)" <<library>> as Logging
+component "Observability.OpenTelemetry\n(AddDefaultOpenTelemetry)" <<library>> as Observability
+component "WireMockHostedService" <<component>> as WireMock
+
+Demo --> Endpoints : MapGet/MapPost
+Endpoints --> SqlSvc : trigger SQL scenarios
+Endpoints --> ExtClient : call stubbed downstream APIs
+Demo --> ErrorsAsp : app.Services.AddErrorHandling()
+Demo --> Logging : services.AddDefaultLogging()
+Demo --> Observability : services.AddDefaultOpenTelemetry()
+Endpoints --> ErrorsAbs : throw Domain/Validation exceptions
+ErrorsAsp --> ErrorsAbs : map IAppError metadata
+ErrorsAsp --> Logging : ILogger scopes for unhandled errors
+ErrorsAsp --> Observability : ISpanEnricher dependencies
+Demo --> WireMock : development-only stub host
+
+note bottom
+  Program.cs wires shared infrastructure via extension methods, then exposes
+  sample endpoints that intentionally throw domain exceptions or call SQL helpers
+  so the middleware/logging/telemetry stack can be observed end-to-end.
+end note
+
+@enduml

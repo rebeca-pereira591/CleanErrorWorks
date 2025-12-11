@@ -1,7 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace Logging.Core;
+namespace Errors.Logging;
 
+/// <summary>
+/// Provides event identifiers consumed by structured logging statements.
+/// </summary>
 public static class LogEvents
 {
     public static readonly EventId UnhandledException = new(1000, nameof(UnhandledException));

@@ -1,0 +1,59 @@
+@startuml
+' Class diagram for Logging.Core types.
+'title Logging.Core – Class Diagram
+skinparam classAttributeIconSize 0
+skinparam dpi 120
+
+class ServiceCollectionExtensions {
+  +AddDefaultLogging(IServiceCollection, IConfiguration?, Action<LoggingConventionOptions>?)
+}
+
+class LoggingBuilderExtensions {
+  +AddDefaultLogging(ILoggingBuilder, IConfiguration?, Action<LoggingConventionOptions>?)
+}
+
+class LoggingConventionOptions {
+  +bool ClearProviders
+  +bool UseConfiguration
+  +string ConfigurationSectionName
+  +LogLevel MinimumLevel
+  +IList<Action<ILoggingBuilder>> Providers
+  +Action<ILoggingBuilder>? ConfigureBuilder
+}
+
+class LoggingBuilderConfigurator {
+  +Apply(ILoggingBuilder, IConfiguration?, LoggingConventionOptions)
+}
+
+class ApiLog <<partial>> {
+  +Unhandled(HttpLogger, string path, Exception ex)
+}
+
+class HttpLogger {
+  -ILogger inner
+  +BeginScope<T>(T)
+  +IsEnabled(LogLevel)
+  +Log(...)
+}
+
+class LogEvents {
+  +EventId UnhandledException
+  +EventId NotFound
+  +EventId Unauthorized
+  +EventId ValidationFailed
+}
+
+ServiceCollectionExtensions --> LoggingBuilderExtensions
+LoggingBuilderExtensions --> LoggingConventionOptions
+LoggingBuilderExtensions --> LoggingBuilderConfigurator
+LoggingBuilderConfigurator --> LoggingConventionOptions
+ApiLog --> HttpLogger
+HttpLogger --> ILogger : wraps
+LogEvents --> ILogger : event ids consumed elsewhere
+
+note bottom
+  Options pattern centralizes defaults while ApiLog + LogEvents provide
+  strongly typed logging hooks for middleware/controllers.
+end note
+
+@enduml

@@ -1,0 +1,58 @@
+@startuml
+' Class diagram for Errors.Abstractions contracts and exception types.
+'title Errors.Abstractions – Class Diagram
+skinparam classAttributeIconSize 0
+skinparam dpi 120
+
+interface IAppError <<interface>> {
+  +ErrorCode Code
+  +string? Detail
+  +bool IsTransient
+  +HttpStatusCode? PreferredStatus
+}
+
+class ErrorCode <<value object>> {
+  +string Code
+  +string Title
+  +string? TypeUri
+  +ToString(): string
+}
+
+class "Result<T>" <<struct>> {
+  -bool IsSuccess
+  -T? Value
+  -IAppError? Error
+  +Ok(T): Result<T>
+  +Fail(IAppError): Result<T>
+}
+
+class DomainException <<exception>>
+class ValidationException <<exception>>
+class AuthorizationException <<exception>>
+class NotFoundException <<exception>>
+class RateLimitException <<exception>>
+
+IAppError <|.. DomainException
+IAppError <|.. ValidationException
+IAppError <|.. AuthorizationException
+IAppError <|.. NotFoundException
+IAppError <|.. RateLimitException
+
+DomainException --> ErrorCode
+ValidationException --> ErrorCode
+AuthorizationException --> ErrorCode
+NotFoundException --> ErrorCode
+RateLimitException --> ErrorCode
+
+"Result<T>" --> IAppError : encapsulates failure
+"Result<T>" --> "T" : holds success value
+
+note right of ErrorCode
+  Value-object ensures code/title/type always travel together.
+end note
+
+note bottom of "Result<T>"
+  Functional Result monad communicates success/failure without throwing.
+end note
+
+@enduml

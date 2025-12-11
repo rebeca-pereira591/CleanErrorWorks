@@ -1,0 +1,34 @@
+@startuml
+' Package diagram for major namespaces.
+'title Errors.AspNetCore – Package Diagram
+skinparam packageStyle rectangle
+skinparam dpi 120
+
+package "Errors.AspNetCore.Core" as Core
+package "Errors.AspNetCore.Mappers" as Mappers
+package "Errors.AspNetCore.Registry" as Registry
+package "Errors.AspNetCore.Sanitization" as Sanitization
+package "Errors.AspNetCore.Formatters" as Formatters
+package "Errors.AspNetCore.Enrichers" as Enrichers
+package "Observability.OpenTelemetry" as Observability <<external>>
+package "Errors.Abstractions" as Abstractions <<external>>
+
+Core ..> Mappers
+Core ..> Formatters
+Core ..> Enrichers
+Core ..> Registry
+Core ..> Sanitization
+Mappers ..> Sanitization
+Registry ..> Mappers
+Enrichers ..> Observability
+Mappers ..> Abstractions
+Sanitization ..> MicrosoftExtensionsHosting : env detection
+Formatters ..> Abstractions : codes via extensions
+
+note bottom
+  Core hosts GlobalExceptionHandler + ExceptionMapperResolver.
+  Registry orders mapper strategies discovered in the Mappers namespace.
+  Sanitization/Formatters/Enrichers supply cross-cutting behaviors.
+end note
+
+@enduml

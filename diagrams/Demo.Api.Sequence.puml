@@ -1,0 +1,33 @@
+@startuml
+' Sequence diagram for typical Demo.Api request encountering an error.
+'title Demo.Api – Request/Error Sequence
+skinparam dpi 120
+
+actor Client
+participant "Demo.Api Endpoint" as Endpoint
+participant "SqlTestService / Domain logic" as Domain
+participant "GlobalExceptionHandler" as Handler
+participant "ProblemDetailsFormatter" as Formatter
+participant "ILogger (Logging.Core)" as Logger
+participant "ActivitySpanEnricher\n(Observability)" as Enricher
+
+Client -> Endpoint : HTTP request
+activate Endpoint
+Endpoint -> Domain : Execute handler
+Domain --> Endpoint : throws DomainException
+Endpoint --> Handler : exception bubbles
+activate Handler
+Handler -> Formatter : Format ProblemDetails
+Handler -> Logger : Log warning/error with scopes
+Handler -> Enricher : Tag Activity + emit events
+Handler --> Client : ProblemDetails JSON + headers
+deactivate Handler
+deactivate Endpoint
+
+note over Handler
+  Handler provided by Errors.AspNetCore pipeline,
+  relying on Logging.Core and Observability.OpenTelemetry services
+  registered by Demo.Api during startup.
+end note
+
+@enduml

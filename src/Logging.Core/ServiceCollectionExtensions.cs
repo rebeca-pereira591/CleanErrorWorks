@@ -1,23 +1,26 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Logging.Core;
+namespace Errors.Logging;
 
+/// <summary>
+/// Provides DI-friendly helpers for registering logging defaults across services.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddLoggingConventions(this IServiceCollection services)
+    /// <summary>
+    /// Registers the default logging pipeline and applies optional configuration delegates.
+    /// </summary>
+    /// <param name="services">The target service collection.</param>
+    /// <param name="configuration">Optional configuration source for logging sections.</param>
+    /// <param name="configure">Optional callback that mutates <see cref="LoggingConventionOptions"/>.</param>
+    /// <returns>The same <see cref="IServiceCollection"/> for chaining.</returns>
+    public static IServiceCollection AddDefaultLogging(
+        this IServiceCollection services,
+        IConfiguration? configuration = null,
+        Action<LoggingConventionOptions>? configure = null)
     {
-        services.AddLogging(builder =>
-        {
-            builder.ClearProviders();
-            builder.AddJsonConsole(o =>
-            {
-                o.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fff ";
-                o.IncludeScopes = true;
-                o.JsonWriterOptions = new() { Indented = false };
-            });
-            builder.SetMinimumLevel(LogLevel.Information);
-        });
+        services.AddLogging(builder => builder.AddDefaultLogging(configuration, configure));
         return services;
     }
 }
